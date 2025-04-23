@@ -1,9 +1,16 @@
-import { Link } from "@inertiajs/react";
-import { Heart, Menu, ShoppingCart, X } from "lucide-react";
-import { useState } from "react";
+import { SharedData } from "@/types";
+import { Link, usePage } from "@inertiajs/react";
+import { Heart, Menu, ShoppingCart, X, User, LogOut, Settings } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 export default function Header() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const userMenuRef = useRef<HTMLDivElement>(null);
+    
+    // Use Laravel auth from usePage
+    const { auth } = usePage<SharedData>().props;
+    const [isLoggedIn] = useState(auth.user !== null);
 
     const menuItems = [
         { label: "Home", href: "/" },
@@ -15,6 +22,28 @@ export default function Header() {
     const toggleDrawer = () => {
         setIsDrawerOpen(!isDrawerOpen);
     };
+
+    const toggleUserMenu = () => {
+        setIsUserMenuOpen(!isUserMenuOpen);
+    };
+
+
+    // Handle clicks outside of the user menu
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setIsUserMenuOpen(false);
+            }
+        }
+
+        if (isUserMenuOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isUserMenuOpen]);
 
     return (
         <header className="border-b border-gray-200 dark:border-gray-800">
@@ -47,9 +76,55 @@ export default function Header() {
                     <button className="rounded-full p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800">
                         <ShoppingCart className="h-5 w-5" />
                     </button>
-                    <Link className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200" href="/login">
-                        Sign in
-                    </Link>
+                    
+                    {isLoggedIn ? (
+                        <div className="relative" ref={userMenuRef}>
+                            <button 
+                                onClick={toggleUserMenu}
+                                className="flex items-center rounded-full bg-gray-100 p-2 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                            >
+                                <User className="h-5 w-5" />
+                            </button>
+                            
+                            {isUserMenuOpen && (
+                                <div className="absolute right-0 mt-2 w-48 rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 dark:bg-gray-900 dark:ring-gray-700">
+                                    <Link 
+                                        href={route('profile.edit')}
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                                    >
+                                        <div className="flex items-center">
+                                            <User className="mr-2 h-4 w-4" />
+                                            Profile
+                                        </div>
+                                    </Link>
+                                    <Link 
+                                        href={route('profile.edit')} 
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                                    >
+                                        <div className="flex items-center">
+                                            <Settings className="mr-2 h-4 w-4" />
+                                            Settings
+                                        </div>
+                                    </Link>
+                                    <Link 
+                                        href={route('logout')}
+                                        method="post"
+                                        as="button"
+                                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                                    >
+                                        <div className="flex items-center">
+                                            <LogOut className="mr-2 h-4 w-4" />
+                                            Logout
+                                        </div>
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <Link className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 dark:bg-white dark:text-black dark:hover:bg-gray-200" href={route('login')}>
+                            Sign in
+                        </Link>
+                    )}
                 </div>
             </div>
 
@@ -84,6 +159,45 @@ export default function Header() {
                                 {item.label}
                             </Link>
                         ))}
+                        
+                        {isLoggedIn ? (
+                            <>
+                                <Link
+                                    className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                                    href={route('profile.edit')}
+                                    onClick={toggleDrawer}
+                                >
+                                    <User className="mr-2 h-4 w-4" />
+                                    Profile
+                                </Link>
+                                <Link
+                                    className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                                    href={route('profile.edit')}
+                                    onClick={toggleDrawer}
+                                >
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    Settings
+                                </Link>
+                                <Link
+                                    className="flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                                    href={route('logout')}
+                                    method="post"
+                                    as="button"
+                                    onClick={toggleDrawer}
+                                >
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    Logout
+                                </Link>
+                            </>
+                        ) : (
+                            <Link
+                                className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                                href={route('login')}
+                                onClick={toggleDrawer}
+                            >
+                                Sign in
+                            </Link>
+                        )}
                     </nav>
                 </div>
             </div>
